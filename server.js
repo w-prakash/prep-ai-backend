@@ -183,6 +183,11 @@ app.listen(PORT, () => {
   console.log("AI server running on port", PORT);
 });
 
+// 🔥 Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 // app.listen(3000, () => {
 //   console.log("AI server running on http://localhost:3000");
 // });
