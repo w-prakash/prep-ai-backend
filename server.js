@@ -188,6 +188,46 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+app.post("/ai/explain", async (req, res) => {
+  try {
+    const { topic, role } = req.body;
+
+    console.log("EXPLAIN REQ:", req.body);
+
+    const prompt = `
+You are an interview coach.
+
+Explain the topic "${topic}" for a ${role} developer.
+
+Give:
+- Simple explanation
+- Key points (bullet format)
+- One small example if applicable
+- 2 interview tips
+
+Respond ONLY in plain text, well formatted.
+`;
+
+    const completion = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3
+    });
+
+    const text = completion.choices[0].message.content.trim();
+
+    res.json({
+      topic,
+      explanation: text
+    });
+
+  } catch (err) {
+    console.error("Explain AI error:", err);
+    res.status(500).json({ error: "Explain failed" });
+  }
+});
+
+
 // app.listen(3000, () => {
 //   console.log("AI server running on http://localhost:3000");
 // });
