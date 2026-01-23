@@ -359,6 +359,59 @@ Reply clearly and concisely like a tutor.
   }
 });
 
+app.post("/ai/mock-interview/start", async (req, res) => {
+  try {
+    const { role, difficulty, count } = req.body;
+
+    const prompt = `
+You are an interview coach.
+
+Generate ${count} multiple-choice interview questions for a ${role} developer at ${difficulty} level.
+
+Rules:
+- Return ONLY strict JSON array
+- Each item must contain:
+  - question
+  - options (exactly 4)
+  - correctIndex (0-3)
+  - explanation (short explanation of correct answer)
+  - topic
+
+Format:
+[
+  {
+    "question": "string",
+    "options": ["a","b","c","d"],
+    "correctIndex": 1,
+    "explanation": "string",
+    "topic": "string"
+  }
+]
+`;
+
+    const completion = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.4
+    });
+
+    const text = completion.choices[0].message.content.trim();
+
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      console.error("Mock interview JSON error:", text);
+      return res.status(500).json({ error: "Invalid interview JSON" });
+    }
+
+    res.json({ questions: json });
+
+  } catch (err) {
+    console.error("Mock interview start error:", err);
+    res.status(500).json({ error: "Mock interview failed" });
+  }
+});
 
 
 // app.listen(3000, () => {
