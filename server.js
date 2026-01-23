@@ -324,6 +324,41 @@ Keep explanation short and clear.
   }
 });
 
+app.post("/ai/followup", async (req, res) => {
+  try {
+    const { question, context, userQuery, role } = req.body;
+
+    const prompt = `
+You are an interview coach.
+
+Context (previous explanation):
+${context}
+
+Original Question:
+${question}
+
+User follow-up question:
+${userQuery}
+
+Reply clearly and concisely like a tutor.
+`;
+
+    const completion = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3
+    });
+
+    const text = completion.choices[0].message.content.trim();
+
+    res.json({ reply: text });
+
+  } catch (err) {
+    console.error("Follow-up AI error:", err);
+    res.status(500).json({ error: "Follow-up failed" });
+  }
+});
+
 
 
 // app.listen(3000, () => {
