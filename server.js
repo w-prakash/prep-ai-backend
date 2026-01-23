@@ -227,6 +227,61 @@ Respond ONLY in plain text, well formatted.
   }
 });
 
+app.post("/ai/quiz-topic", async (req, res) => {
+  try {
+    const { topic, role } = req.body;
+
+    console.log("QUIZ TOPIC REQ:", req.body);
+
+    const prompt = `
+You are an interview coach.
+
+Generate 5 multiple choice interview questions ONLY about the topic "${topic}" for a ${role} developer.
+
+Rules:
+- Return ONLY strict JSON array
+- Each question must include:
+  - question
+  - options (exactly 4)
+  - correctIndex (0-3)
+  - topic
+
+Format:
+[
+  {
+    "question": "string",
+    "options": ["a","b","c","d"],
+    "correctIndex": 1,
+    "topic": "${topic}"
+  }
+]
+`;
+
+    const completion = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3
+    });
+
+    const text = completion.choices[0].message.content.trim();
+
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      console.error("Raw quiz AI response:", text);
+      return res.status(500).json({ error: "Invalid quiz JSON" });
+    }
+
+    res.json({ questions: json });
+
+  } catch (err) {
+    console.error("Quiz topic AI error:", err);
+    res.status(500).json({ error: "Quiz generation failed" });
+  }
+});
+
+
 
 // app.listen(3000, () => {
 //   console.log("AI server running on http://localhost:3000");
