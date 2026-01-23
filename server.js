@@ -415,11 +415,14 @@ Format:
 
 app.post("/ai/mock-interview/evaluate", async (req, res) => {
   try {
-    const { role, answers } = req.body;
+    const { role, answers } = req.body;   // 🔥 FIXED
 
-    const formatted = answers.map((a, i) => `
-Q${i + 1}: ${a.question}
-User Answer: ${a.answer}
+    const formatted = answers.map((q, i) => `
+Q${i + 1}: ${q.question}
+Options: ${q.options.join(", ")}
+User selected: ${q.options[q.userIndex]}
+Correct answer: ${q.options[q.correctIndex]}
+Is Correct: ${q.isCorrect}
 `).join("\n");
 
     const prompt = `
@@ -466,6 +469,7 @@ Return ONLY strict JSON:
     res.status(500).json({ error: "Evaluation failed" });
   }
 });
+
 
 // app.listen(3000, () => {
 //   console.log("AI server running on http://localhost:3000");
