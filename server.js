@@ -281,6 +281,49 @@ Format:
   }
 });
 
+app.post("/ai/explain-wrong", async (req, res) => {
+  try {
+    const { question, options, correctAnswer, userAnswer, role } = req.body;
+
+    const prompt = `
+You are an interview coach.
+
+Question:
+${question}
+
+Options:
+${options.join(", ")}
+
+User selected:
+${userAnswer}
+
+Correct answer:
+${correctAnswer}
+
+Explain:
+- Why the user's answer is wrong
+- Why the correct answer is right
+- Give a short interview tip
+
+Keep explanation short and clear.
+`;
+
+    const completion = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3
+    });
+
+    const text = completion.choices[0].message.content.trim();
+
+    res.json({ explanation: text });
+
+  } catch (err) {
+    console.error("Explain wrong error:", err);
+    res.status(500).json({ error: "Explain wrong failed" });
+  }
+});
+
 
 
 // app.listen(3000, () => {
