@@ -413,6 +413,59 @@ Format:
   }
 });
 
+app.post("/ai/mock-interview/evaluate", async (req, res) => {
+  try {
+    const { role, answers } = req.body;
+
+    const formatted = answers.map((a, i) => `
+Q${i + 1}: ${a.question}
+User Answer: ${a.answer}
+`).join("\n");
+
+    const prompt = `
+You are an interview coach.
+
+Evaluate this mock interview for a ${role} developer.
+
+${formatted}
+
+Give:
+- Overall score (0-10)
+- Strengths (bullet points)
+- Weak areas (bullet points)
+- Final interview feedback
+
+Return ONLY strict JSON:
+{
+  "score": number,
+  "strengths": ["string"],
+  "weakAreas": ["string"],
+  "feedback": "string"
+}
+`;
+
+    const completion = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3
+    });
+
+    const text = completion.choices[0].message.content.trim();
+
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return res.status(500).json({ error: "Invalid evaluation JSON" });
+    }
+
+    res.json(json);
+
+  } catch (err) {
+    console.error("Mock interview evaluate error:", err);
+    res.status(500).json({ error: "Evaluation failed" });
+  }
+});
 
 // app.listen(3000, () => {
 //   console.log("AI server running on http://localhost:3000");
