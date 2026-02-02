@@ -180,8 +180,12 @@ JSON format:
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("AI server running on port", PORT);
+  console.log(`AI server running on http://localhost:${PORT}`);
 });
+
+// app.listen(PORT, () => {
+//   console.log("AI server running on port", PORT);
+// });
 
 // 🔥 Health check endpoint
 app.get("/health", (req, res) => {
@@ -470,7 +474,3 @@ Return ONLY strict JSON:
   }
 });
 
-
-// app.listen(3000, () => {
-//   console.log("AI server running on http://localhost:3000");
-// });
