@@ -39,7 +39,7 @@ Respond ONLY in strict JSON like this:
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.2
     });
@@ -84,7 +84,7 @@ JSON format:
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.4
     });
@@ -112,19 +112,27 @@ app.post("/ai/mcq-question", async (req, res) => {
 
     console.log("MCQ REQ:", req.body);
 
+    // 🔥 add uniqueness seed
+    const nonce = Date.now() + "-" + Math.floor(Math.random() * 100000);
+
     const prompt = `
 You are an interview coach.
 
 Generate ONE ${difficulty} level multiple-choice interview question for a ${role} developer.
 ${topic ? `The question MUST be strictly from the topic: ${topic}.` : ''}
+
+Uniqueness seed: ${nonce}
+
 Rules:
 - Return ONLY strict JSON
 - Exactly 4 options
 - One correct answer
 - The correct answer MUST be one of the options
-- Do NOT return A/B/C/D
+- Do NOT return A/B/C/D labels
 - Return the actual correct option text
-- ALSO provide a  explanation of why this option is correct
+- ALSO provide an explanation
+- Do NOT generate common or repeated interview questions
+- Make the question unique and vary structure (scenario, concept, or code based)
 
 JSON format:
 {
@@ -137,9 +145,10 @@ JSON format:
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.4
+      temperature: 0.85,   // 🔥 increased
+      top_p: 0.9           // 🔥 added diversity
     });
 
     const text = completion.choices[0].message.content.trim();
@@ -162,7 +171,6 @@ JSON format:
       return res.status(500).json({ error: "Correct answer mismatch" });
     }
 
-    // 🔥 SEND EXPLANATION ALSO
     res.json({
       question: json.question,
       options: json.options,
@@ -176,6 +184,76 @@ JSON format:
     res.status(500).json({ error: "MCQ generation failed" });
   }
 });
+
+app.post("/ai/mcq-game-question", async (req, res) => {
+  try {
+    const { role, difficulty, topic } = req.body;
+
+    const nonce = Date.now() + "-" + Math.floor(Math.random() * 100000);
+
+  const prompt = `
+You are generating MCQs for a rapid quiz game.
+
+Generate ONE ${difficulty} level MCQ for a ${role} developer.
+${topic ? `Topic must be: ${topic}` : ""}
+
+Uniqueness seed: ${nonce}
+
+RULES:
+- Question max 18 words
+- Each option max 4 words
+- Explanation max 2 sentences
+- No long paragraphs
+- No filler text
+- Exactly 4 options
+- One correct answer
+- Correct answer must match option text
+- Return ONLY JSON
+
+FORMAT:
+{
+  "question": "short question",
+  "options": ["short", "short", "short", "short"],
+  "correctAnswer": "one option",
+  "topic": "string",
+  "explanation": "very short why correct"
+}
+`;
+
+
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.9,
+      top_p: 0.95
+    });
+
+    const text = completion.choices[0].message.content.trim();
+
+    const json = JSON.parse(text);
+
+    const correctIndex = json.options.findIndex(
+      o => o.trim() === json.correctAnswer.trim()
+    );
+
+    if (correctIndex === -1) {
+      return res.status(500).json({ error: "Answer mismatch" });
+    }
+
+    res.json({
+      question: json.question,
+      options: json.options,
+      correctIndex,
+      topic: json.topic,
+explanation: json.explanation || `Correct answer is "${json.correctAnswer}".`
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Game MCQ failed" });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 
@@ -213,7 +291,7 @@ Respond ONLY in plain text, well formatted.
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.3
     });
@@ -262,7 +340,7 @@ Format:
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.3
     });
@@ -313,7 +391,7 @@ Keep explanation short and clear.
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.3
     });
@@ -348,7 +426,7 @@ Reply clearly and concisely like a tutor.
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.3
     });
@@ -394,7 +472,7 @@ Format:
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.4
     });
@@ -452,7 +530,7 @@ Return ONLY strict JSON:
 `;
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.3
     });
