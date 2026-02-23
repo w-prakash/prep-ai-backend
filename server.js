@@ -8,7 +8,31 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+function parseAIJSON(text) {
+  if (!text) return null;
 
+  try {
+    // direct parse works sometimes
+    return JSON.parse(text);
+  } catch {}
+
+  try {
+    // remove markdown fences
+    text = text.replace(/```json/g, "")
+               .replace(/```/g, "")
+               .trim();
+
+    // extract JSON object or array
+    const match = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+
+    if (!match) return null;
+
+    return JSON.parse(match[0]);
+
+  } catch {
+    return null;
+  }
+}
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
@@ -46,14 +70,14 @@ Respond ONLY in strict JSON like this:
 
     const text = completion.choices[0].message.content.trim();
 
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch (e) {
-      console.error("Raw AI response:", text);
-      return res.status(500).json({ error: "AI returned invalid JSON" });
-    }
+const json = parseAIJSON(text);
 
+if (!json) {
+  console.error("Invalid AI JSON:", text);
+  return res.status(500).json({
+    error: "AI returned invalid JSON"
+  });
+}
     res.json(json);
 
   } catch (err) {
@@ -91,13 +115,14 @@ JSON format:
 
     const text = completion.choices[0].message.content.trim();
 
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch (e) {
-      console.error("Raw question AI response:", text);
-      return res.status(500).json({ error: "AI returned invalid JSON" });
-    }
+const json = parseAIJSON(text);
+
+if (!json) {
+  console.error("Invalid AI JSON:", text);
+  return res.status(500).json({
+    error: "AI returned invalid JSON"
+  });
+}
 
     res.json(json);
 
@@ -153,13 +178,14 @@ JSON format:
 
     const text = completion.choices[0].message.content.trim();
 
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch (e) {
-      console.error("Raw MCQ AI response:", text);
-      return res.status(500).json({ error: "AI returned invalid JSON" });
-    }
+const json = parseAIJSON(text);
+
+if (!json) {
+  console.error("Invalid AI JSON:", text);
+  return res.status(500).json({
+    error: "AI returned invalid JSON"
+  });
+}
 
     // 🔥 Normalize correct answer → index
     const correctIndex = json.options.findIndex(
@@ -347,13 +373,14 @@ Format:
 
     const text = completion.choices[0].message.content.trim();
 
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch (e) {
-      console.error("Raw quiz AI response:", text);
-      return res.status(500).json({ error: "Invalid quiz JSON" });
-    }
+const json = parseAIJSON(text);
+
+if (!json) {
+  console.error("Invalid AI JSON:", text);
+  return res.status(500).json({
+    error: "AI returned invalid JSON"
+  });
+}
 
     res.json({ questions: json });
 
@@ -479,13 +506,14 @@ Format:
 
     const text = completion.choices[0].message.content.trim();
 
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch (e) {
-      console.error("Mock interview JSON error:", text);
-      return res.status(500).json({ error: "Invalid interview JSON" });
-    }
+const json = parseAIJSON(text);
+
+if (!json) {
+  console.error("Invalid AI JSON:", text);
+  return res.status(500).json({
+    error: "AI returned invalid JSON"
+  });
+}
 
     res.json({ questions: json });
 
@@ -537,12 +565,14 @@ Return ONLY strict JSON:
 
     const text = completion.choices[0].message.content.trim();
 
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch {
-      return res.status(500).json({ error: "Invalid evaluation JSON" });
-    }
+const json = parseAIJSON(text);
+
+if (!json) {
+  console.error("Invalid AI JSON:", text);
+  return res.status(500).json({
+    error: "AI returned invalid JSON"
+  });
+}
 
     res.json(json);
 
